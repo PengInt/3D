@@ -1,4 +1,5 @@
 import math, pygame
+import pygame as system
 from termcolor import colored as c
 
 
@@ -176,12 +177,29 @@ class Line:
     
 
 class GameObject:
-    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]], pos=Vector3(0, 0, 0)):
+    heierarchy = {}
+    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]], pos=Vector3(0, 0, 0), **kwargs):
         self.pos = pos
         self.v = v
         self.l = []
         for i in l:
             self.l.append(Line(self.v[i[0]], self.v[i[1]]))
+        self.name = kwargs.pop('Name', 0)
+        if self.name == 0:
+            self.name = 'GameObject'
+            n = 0
+            while self.name in Renderer.renderers:
+                n += 1
+                self.name = f'GameObject {n}'
+            GameObject.heierarchy[self.name] = self
+        else:
+            startingName = self.name
+            n = 0
+            while self.name in GameObject.heierarchy:
+                n += 1
+                self.name = f'{startingName} {n}'
+            GameObject.heierarchy[self.name] = self
+
     def __gt__(self, b: Quaternion|tuple[Quaternion, Vector3]):
         if isinstance(b, Quaternion):
             q = b
@@ -204,7 +222,7 @@ class Camera:
             self.fov = 90
         self.pos = kwargs.pop('pos', None)
         if self.pos is None:
-            self.pos = Vector3(0, 2, 5)
+            self.pos = Vector3(0, 0, 5)
         self.rot = kwargs.pop('rot', None)
         if self.rot is None:
             self.rot = Quaternion(0, Vector3(0, 0, 0))
@@ -215,6 +233,7 @@ class Camera:
 pygame.init()
 print('\033c', end='')
 class Renderer:
+    renderers = {}
     def __init__(self, **kwargs):
         '''
         **kwargs (default):
@@ -239,6 +258,14 @@ class Renderer:
         self.surface = kwargs.pop('surface', None)
         if self.surface is None:
             self.surface = pygame.display.set_mode(self.surfaceSize, vsync=self.vsync)
+        self.name = kwargs.pop('Name', 0)
+        if self.name == 0:
+            self.name = 'Renderer'
+            n = 0
+            while self.name in Renderer.renderers:
+                n += 1
+                self.name = f'Renderer {n}'
+            Renderer.renderers[self.name] = self
         
         print(c('  -> New Renderer', (0, 255, 255)))
     def __str__(self):
@@ -247,20 +274,36 @@ class Renderer:
             result += f'    {c(attr, (0, 255, 0))} {" "*math.floor((7.5-len(attr))%2)}{". "*math.floor(7.5-len(attr)/2)}. . . {c(self.__dict__[attr], (0, 0, 255))}\n'
         return result
     def render(self):
-        pass
+        camPos = self.camera.pos
+        self.surface.fill((0, 0, 0))
+        for obj in GameObject.heierarchy:
+            for l in GameObject.heierarchy[obj].l:
+                dx1 = l.v[0].x-camPos.x
+                dx2 = l.v[1].x-camPos.x
+
+                dy1 = l.v[0].y-camPos.y
+                dy2 = l.v[1].y-camPos.y
+
+                dz1 = l.v[0].z-camPos.z
+                dz2 = l.v[1].z-camPos.z
+
+                y1 = dy1/dz1
+                y2 = dy2/dz2
+
+                x1 = dx1 / dz1
+                x2 = dx2 / dz2
+
+                pygame.draw.line(self.surface, (255, 255, 255), (x1*self.surface.get_height()+self.surface.get_height()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5), (x2*self.surface.get_height()+self.surface.get_height()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5), 3)
+        pygame.display.update()
+
 
 print(c('Welcom from GameEngine!\n', (153, 255, 102)))
 
 
-renderers = [Renderer()]
-print(renderers[0])
+Renderer()
+print(Renderer.renderers['Renderer'])
 
-'''point = Vector3(2, 3, 1)
+point = Vector3(2, 3, 1)
 print(point)
-point > (Vector3(0, 0, 0), Quaternion(math.pi/2, Vector3(0, 1, 0)))
-print(point)'''
-
-class Events:
-    @classmethod
-    def get(cls):
-        return pygame.event.get()
+point > (Vector3(0, 0, 0), Quaternion(math.pi/4, Vector3(0, 1, 0)))
+print(point)
