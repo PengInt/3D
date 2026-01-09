@@ -126,14 +126,14 @@ def tempRot(self, b: tuple[Vector3, Quaternion]):
             )
             unitQuaternionConjugate = unitQuaternion.conjugate # inversing the unit quaternion
 
-            print('\nUnit Quaternion Conjugate (q-1)       ', unitQuaternionConjugate)
-            print('Unit Quaternion (q)                   ', unitQuaternion)
-            print('Quaternion Point to Rotate (p)        ', quaternionDeltaPoint)
-            print('Currently using formula (q-1)pq\n')
+            #print('\nUnit Quaternion Conjugate (q-1)       ', unitQuaternionConjugate)
+            #print('Unit Quaternion (q)                   ', unitQuaternion)
+            #print('Quaternion Point to Rotate (p)        ', quaternionDeltaPoint)
+            #print('Currently using formula (q-1)pq\n')
             
             newQuaternion = unitQuaternionConjugate * quaternionDeltaPoint * unitQuaternion # new quaternion
 
-            print(newQuaternion)
+            #print(newQuaternion)
             
             self.x = newQuaternion.x + referencePoint.x
             self.y = newQuaternion.y + referencePoint.y
@@ -175,15 +175,21 @@ class Line:
            v > (r, q)
        return True
     
+class Triangle:
+    def __init__(self, v1, v2, v3):
+        self.v = [v1, v2, v3]
 
 class GameObject:
     heierarchy = {}
-    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]], pos=Vector3(0, 0, 0), **kwargs):
+    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]]|list[tuple[int, int]|tuple[list[int, int]]|list[list[int, int]]], t: tuple[tuple[int, int, int]]|list[tuple[int, int, int]]|tuple[list[int, int, int]]|list[list[int, int, int]], pos=Vector3(0, 0, 0), **kwargs):
         self.pos = pos
         self.v = v
         self.l = []
+        self.t = []
         for i in l:
             self.l.append(Line(self.v[i[0]], self.v[i[1]]))
+        for i in t:
+            self.t.append(Line(self.v[i[0]], self.v[i[1]], self.v[i[2]]))
         self.name = kwargs.pop('Name', 0)
         if self.name == 0:
             self.name = 'GameObject'
@@ -214,6 +220,14 @@ class GameObject:
             v > (r, q)
         self.pos > (r, q)
         return True
+    def __ge__(self, b: Vector3):
+        if (isinstance(b, Vector3)):
+            self.pos += b
+            for v in range(len(self.v)):
+                self.v[v] += b
+            return True
+        else:
+            return NotImplemented
 
 class Camera:
     def __init__(self, **kwargs):

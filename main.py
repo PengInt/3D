@@ -1,4 +1,10 @@
-import GameEngine
+import GameEngine, math, random
+
+
+arr = []
+for i in range(7):
+	for j in range(i+1, 8):
+		arr.append([i, j])
 
 GameEngine.GameObject((
 	GameEngine.Vector3(-1, -1, -1),
@@ -9,8 +15,11 @@ GameEngine.GameObject((
 	GameEngine.Vector3(1, -1, 1),
 	GameEngine.Vector3(-1, 1, 1),
 	GameEngine.Vector3(1, 1, 1)),
-	((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0)), GameEngine.Vector3(0, 0, 0)
+	arr, (), GameEngine.Vector3(0, 0, 0)
 )
+
+
+axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
 running = True
 while running:
@@ -19,7 +28,9 @@ while running:
 			GameEngine.system.quit()
 			exit()
 
+
+	GameEngine.GameObject.heierarchy['GameObject'] > GameEngine.Quaternion(0.00025*math.pi, axis)
+
 	GameEngine.Renderer.renderers['Renderer'].render()
-	print('update')
 
 exit()
