@@ -72,6 +72,8 @@ class Vector3:
     def dist(cls, a, b):
         dp = abs(Vector3(a.x - b.x, a.y - b.y, a.z - b.z))
         return (dp.x**2 + dp.y**2 + dp.z**2)**0.5
+    def magnitude(self):
+        return (self.x**2 + self.y**2 + self.z**2)**0.5
 
 
 class Quaternion:
@@ -210,6 +212,15 @@ class Triangle:
     @property
     def lighting(self):
         return self.verticalSurfaceArea/self.surfaceArea
+    def rLighting(self, rPos):
+        v1 = self.v[1] - self.v[0]
+        v2 = self.v[2] - self.v[0]
+        n = v1 * v2
+        v = self.v[0]-rPos
+        side = -(n ** v)
+        if side >= 0:
+            return self.lighting
+        return 0
     def __irshift__(self, b: Quaternion|tuple[Quaternion, Vector3]):
         if isinstance(b, Quaternion):
             q = b
@@ -399,7 +410,7 @@ class Renderer:
                 x2 = dx2 / dz2
                 x3 = dx3 / dz3
 
-                c = t.lighting * 255
+                c = (t.rLighting(self.camera.pos) * 3/4 + 0.25) * 255
 
                 pygame.draw.polygon(self.surface, (c, c, c),
                                     ((x1*self.surface.get_height()+self.surface.get_height()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),
