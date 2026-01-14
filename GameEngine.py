@@ -1,11 +1,12 @@
-import sys
-
 import json
-import math, pygame
+import math, pygame, OpenGL
 import pathlib
 import pygame as system
 from termcolor import colored as c
 import numpy as np
+
+from OpenGL.GL import *
+from OpenGL.GLU import *
 
 class Vector3:
     def __init__(self, x, y, z):
@@ -359,7 +360,9 @@ class Renderer:
             self.vsync = 1
         self.surface = kwargs.pop('surface', None)
         if self.surface is None:
-            self.surface = pygame.display.set_mode(self.surfaceSize, vsync=self.vsync)
+            self.surface = pygame.display.set_mode(self.surfaceSize, pygame.DOUBLEBUF | pygame.OPENGL, vsync=self.vsync)
+            pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 16)
+            glEnable(GL_DEPTH_TEST)
             pygame.display.set_icon(pygame.image.load('Icon.png'))
         self.name = kwargs.pop('Name', 0)
         if self.name == 0:
@@ -373,6 +376,8 @@ class Renderer:
         print(c('  -> New Renderer', (0, 255, 255)))
 
         self.zBuffer = np.full((self.surfaceSize[0], self.surfaceSize[1]), -np.inf)
+
+        gluPerspective(45, (self.surfaceSize[0]/self.surfaceSize[1]), 0.1, 50)
     def __str__(self):
         result = ''
         for attr in self.__dict__:
@@ -381,6 +386,7 @@ class Renderer:
         return result
     def render(self):
         camPos = self.camera.pos
+        glTranslatef(-camera_pos[0], -camera_pos[1], -camera_pos[2])
         self.surface.fill((0, 0, 0))
         self.zBuffer.fill(-np.inf)
         for obj in GameObject.heierarchy:
@@ -411,13 +417,12 @@ class Renderer:
                 x3 = dx3 / dz3
 
                 c = (t.rLighting(self.camera.pos) * 3/4 + 0.25) * 255
-
-                pygame.draw.polygon(self.surface, (c, c, c),
+                pygame.draw.polygon(self.surface, (255, 255, 255),
                                     ((x1*self.surface.get_height()+self.surface.get_height()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),
                                             (x2*self.surface.get_height()+self.surface.get_height()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5),
                                             (x3*self.surface.get_height()+self.surface.get_height()*0.5, -y3*self.surface.get_height()+self.surface.get_height()*0.5)
                                            ))
-        pygame.display.update()
+        pygame.display.flip()
 
 
 print(c('Welcom from GameEngine!\n', (153, 255, 102)))
