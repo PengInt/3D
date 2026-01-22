@@ -371,8 +371,6 @@ class Renderer:
             Renderer.renderers[self.name] = self
         
         print(c('  -> New Renderer', (0, 255, 255)))
-
-        self.zBuffer = np.full((self.surfaceSize[0], self.surfaceSize[1]), -np.inf)
     def __str__(self):
         result = ''
         for attr in self.__dict__:
@@ -382,7 +380,6 @@ class Renderer:
     def render(self):
         camPos = self.camera.pos
         self.surface.fill((0, 0, 0))
-        self.zBuffer.fill(-np.inf)
         for obj in GameObject.heierarchy:
             maxY = -1000000
             minY = 1000000

@@ -24,6 +24,10 @@ GameEngine.GameObject.fromJSON(pathlib.Path.cwd()/'model_data.json')
 axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
 running = True
+
+GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.5 * math.pi, GameEngine.Vector3(1, 0, 0))
+GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(1 * math.pi, GameEngine.Vector3(0, 1, 0))
+
 while running:
 	for e in GameEngine.system.event.get():
 		if e.type == GameEngine.system.QUIT:
@@ -31,7 +35,7 @@ while running:
 			exit()
 
 
-	GameEngine.GameObject.heierarchy['Cube'] >>= GameEngine.Quaternion(0.00025*math.pi, axis)
+	GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.0025*math.pi, axis)
 
 	GameEngine.Renderer.renderers['Renderer'].render()
 
