@@ -74,6 +74,27 @@ class Vector3:
         return (dp.x**2 + dp.y**2 + dp.z**2)**0.5
     def magnitude(self):
         return (self.x**2 + self.y**2 + self.z**2)**0.5
+    @classmethod
+    def getLowest(cls, points):
+        lp = None
+        for p in points:
+            if lp == None:
+                lp = p
+            else:
+                if lp.y > p.y:
+                    lp = p
+        return lp
+
+    @classmethod
+    def getHighest(cls, points):
+        hp = None
+        for p in points:
+            if hp == None:
+                hp = p
+            else:
+                if hp.y < p.y:
+                    hp = p
+        return hp
 
 
 class Quaternion:
@@ -209,17 +230,24 @@ class Triangle:
             x.append(v.x)
             z.append(v.z)
         return abs(x[0] * (z[1] - z[2]) + x[1] * (z[2] - z[0]) + x[2] * (z[0] - z[1])) / 2
-    @property
-    def lighting(self):
-        return self.verticalSurfaceArea/self.surfaceArea
-    def rLighting(self, rPos):
-        v1 = self.v[1] - self.v[0]
-        v2 = self.v[2] - self.v[0]
-        n = v1 * v2
-        v = self.v[0]-rPos
-        side = -(n ** v)
-        if side >= 0:
-            return self.lighting
+    def lighting(self, camPos):
+        up = True
+        l = Vector3.getLowest(self.v)
+        h = Vector3.getHighest(self.v)
+        if Vector3.dist(h, camPos) > Vector3.dist(l, camPos):
+            da = math.atan2(h.y, Vector3.dist(h, camPos)) - math.atan2(l.y, Vector3.dist(l, camPos))
+            if da < 0 and l.y > 0 and h.y > 0:
+                up = False
+            else:
+                up = True
+        else:
+            da = math.atan2(l.y, Vector3.dist(l, camPos)) - math.atan2(h.y, Vector3.dist(h, camPos))
+            if da > 0 and l.y < 0 and h.y < 0:
+                up = True
+            else:
+                up = False
+        if up:
+            return self.verticalSurfaceArea / self.surfaceArea
         return 0
     def __irshift__(self, b: Quaternion|tuple[Quaternion, Vector3]):
         if isinstance(b, Quaternion):
@@ -361,6 +389,7 @@ class Renderer:
         if self.surface is None:
             self.surface = pygame.display.set_mode(self.surfaceSize, vsync=self.vsync)
             pygame.display.set_icon(pygame.image.load('Icon.png'))
+            pygame.display.set_caption('Renderer')
         self.name = kwargs.pop('Name', 0)
         if self.name == 0:
             self.name = 'Renderer'
@@ -407,7 +436,7 @@ class Renderer:
                 x2 = dx2 / dz2
                 x3 = dx3 / dz3
 
-                c = (t.rLighting(self.camera.pos) * 3/4 + 0.25) * 255
+                c = (t.lighting(self.camera.pos) * 3/4 + 0.25) * 255
 
                 pygame.draw.polygon(self.surface, (c, c, c),
                                     ((x1*self.surface.get_height()+self.surface.get_height()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),

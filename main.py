@@ -1,3 +1,5 @@
+import pygame
+
 import GameEngine, math, random, pathlib
 
 
@@ -33,9 +35,11 @@ while running:
 		if e.type == GameEngine.system.QUIT:
 			GameEngine.system.quit()
 			exit()
+		elif e.type == GameEngine.system.MOUSEBUTTONDOWN:
+			axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
 
-	GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.0025*math.pi, axis)
+	GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.0125*math.pi, axis)
 
 	GameEngine.Renderer.renderers['Renderer'].render()
 
