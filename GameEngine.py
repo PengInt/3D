@@ -7,6 +7,16 @@ import pygame as system
 from termcolor import colored as c
 import numpy as np
 
+
+def islistinstance(List, Class):
+    if not isinstance(List, list):
+        return False
+    for item in List:
+        if not isinstance(item, Class):
+            return False
+    return True
+
+
 class Vector3:
     def __init__(self, x, y, z):
         self.x = x
@@ -65,6 +75,8 @@ class Vector3:
     def __str__(self):
         return f'({self.x:.2f}, {self.y:.2f}, {self.z:.2f})'
     def __irshift__(self, b):
+        return NotImplemented
+    def __ilshift__(self, b):
         return NotImplemented
     def __abs__(self):
         return Vector3(math.fabs(self.x), math.fabs(self.y), math.fabs(self.z))
@@ -184,6 +196,13 @@ def tempRot(self, b: tuple[Vector3, Quaternion]):
         return NotImplemented
 Vector3.__irshift__ = tempRot
 
+def eulrot(self, b:tuple[Vector3, Vector3]):
+    self >>= (b[0], Quaternion(b[1].y, Vector3(0, 1, 0)))
+    self >>= (b[0], Quaternion(b[1].z, Vector3(0, 0, 1)))
+    self >>= (b[0], Quaternion(b[1].x, Vector3(0, 0, 1)))
+    return self
+Vector3.__ilshift__ = eulrot
+
 class Line:
     def __init__(self, v1: Vector3, v2: Vector3):
         self.v = [v1, v2]
@@ -265,31 +284,37 @@ class Triangle:
 
 class GameObject:
     heierarchy = {}
-    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]]|list[tuple[int, int]|tuple[list[int]]|list[list[int]]], t: tuple[tuple[int, int, int]]|list[tuple[int, int, int]]|tuple[list[int]]|list[list[int]], pos=Vector3(0, 0, 0), **kwargs):
+    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]]|list[tuple[int, int]|tuple[list[int]]|list[list[int]]]|list[Line], t: tuple[tuple[int, int, int]]|list[tuple[int, int, int]]|tuple[list[int]]|list[list[int]]|list[Triangle], pos=Vector3(0, 0, 0), storeInHeierarchy=True, **kwargs):
         self.pos = pos
         self.v = v
         self.l = []
         self.t = []
-        for i in l:
-            self.l.append(Line(self.v[i[0]], self.v[i[1]]))
-        for i in t:
-            self.t.append(Triangle(self.v[i[0]], self.v[i[1]], self.v[i[2]]))
-        self.name = kwargs.pop('name', 0)
-        print(self.name)
-        if self.name == 0:
-            self.name = 'GameObject'
-            n = 0
-            while self.name in Renderer.renderers:
-                n += 1
-                self.name = f'GameObject {n}'
-            GameObject.heierarchy[self.name] = self
+        if islistinstance(l, Line):
+            self.l = l
         else:
-            startingName = self.name
-            n = 0
-            while self.name in GameObject.heierarchy:
-                n += 1
-                self.name = f'{startingName} {n}'
-            GameObject.heierarchy[self.name] = self
+            for i in l:
+                self.l.append(Line(self.v[i[0]], self.v[i[1]]))
+        if islistinstance(t, Triangle):
+            self.t = t
+        else:
+            for i in t:
+                self.t.append(Triangle(self.v[i[0]], self.v[i[1]], self.v[i[2]]))
+        self.name = kwargs.pop('name', 0)
+        if storeInHeierarchy:
+            if self.name == 0:
+                self.name = 'GameObject'
+                n = 0
+                while self.name in Renderer.renderers:
+                    n += 1
+                    self.name = f'GameObject {n}'
+                GameObject.heierarchy[self.name] = self
+            else:
+                startingName = self.name
+                n = 0
+                while self.name in GameObject.heierarchy:
+                    n += 1
+                    self.name = f'{startingName} {n}'
+                GameObject.heierarchy[self.name] = self
     def getSortedTriangles(self, rPos: Vector3):
         sortedTriangles = []
         for t in self.t:
@@ -336,14 +361,31 @@ class GameObject:
             v >>= (r, q)
         self.pos >>= (r, q)
         return self
+    def __ilshift__(self, b: Vector3|tuple[Vector3, Vector3]):
+        if isinstance(b, Vector3):
+            v3 = b
+            r = self.pos
+        elif isinstance(b, tuple):
+            v3 = b[0]
+            r = b[1]
+        else:
+            return NotImplemented
+
+        for v in self.v:
+            v <<= (r, v3)
+        self.pos <<= (r, v3)
+        return self
     def __ge__(self, b: Vector3):
-        if (isinstance(b, Vector3)):
+        if isinstance(b, Vector3):
             self.pos += b
             for v in range(len(self.v)):
                 self.v[v] += b
             return True
         else:
             return NotImplemented
+    @classmethod
+    def copy(cls, a, storeInHeierarchy=True):
+        return GameObject(a.v.copy(), a.l.copy(), a.t.copy(), pos=Vector3(a.pos.x, a.pos.y, a.pos.z), storeInHeierarchy=storeInHeierarchy)
 
 class Camera:
     def __init__(self, **kwargs):
@@ -355,7 +397,7 @@ class Camera:
             self.pos = Vector3(0, 0, -5)
         self.rot = kwargs.pop('rot', None)
         if self.rot is None:
-            self.rot = Quaternion(0, Vector3(0, 0, 0))
+            self.rot = Vector3(0, 0, 0)
 
     def __str__(self):
         return 'Camera Object'
@@ -408,14 +450,18 @@ class Renderer:
         return result
     def render(self):
         camPos = self.camera.pos
+        camRot = self.camera.rot
         self.surface.fill((0, 0, 0))
         for obj in GameObject.heierarchy:
+            obyekt = GameObject.copy(GameObject.heierarchy[obj], storeInHeierarchy=False)
+            obyekt >= camPos
+            obyekt <<= (camPos, camRot)
             maxY = -1000000
             minY = 1000000
-            for t in GameObject.heierarchy[obj].t:
+            for t in obyekt.t:
                 if t.pos.y > maxY: maxY = t.pos.y
                 elif t.pos.y < minY: minY = t.pos.y
-            for t in GameObject.heierarchy[obj].getSortedTriangles(self.camera.pos):
+            for t in obyekt.getSortedTriangles(self.camera.pos):
                 dx1 = t.v[0].x-camPos.x
                 dx2 = t.v[1].x-camPos.x
                 dx3 = t.v[2].x-camPos.x

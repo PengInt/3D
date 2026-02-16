@@ -3,22 +3,6 @@ import pygame
 import GameEngine, math, random, pathlib
 
 
-'''arr = []
-for i in range(7):
-	for j in range(i+1, 8):
-		arr.append([i, j])
-
-GameEngine.GameObject((
-	GameEngine.Vector3(-1, -1, -1),
-	GameEngine.Vector3(1, -1, -1),
-	GameEngine.Vector3(-1, 1, -1),
-	GameEngine.Vector3(-1, -1, 1),
-	GameEngine.Vector3(1, 1, -1),
-	GameEngine.Vector3(1, -1, 1),
-	GameEngine.Vector3(-1, 1, 1),
-	GameEngine.Vector3(1, 1, 1)),
-	arr, (), GameEngine.Vector3(0, 0, 0)
-)'''
 
 GameEngine.GameObject.fromJSON(pathlib.Path.cwd()/'model_data.json')
 
@@ -35,8 +19,21 @@ while running:
 		if e.type == GameEngine.system.QUIT:
 			GameEngine.system.quit()
 			exit()
-		elif e.type == GameEngine.system.MOUSEBUTTONDOWN:
-			axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
+		elif e.type == GameEngine.system.KEYDOWN:
+			if e.key == GameEngine.system.K_w:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.z += 1
+			if e.key == GameEngine.system.K_a:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.x += -1
+			if e.key == GameEngine.system.K_s:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.z += -1
+			if e.key == GameEngine.system.K_d:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.x += 1
+			if e.key == GameEngine.system.K_e:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.y += 1
+			if e.key == GameEngine.system.K_q:
+				GameEngine.Renderer.renderers['Renderer'].camera.pos.y += -1
+		#elif e.type == GameEngine.system.MOUSEBUTTONDOWN:
+		#	axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
 
 	GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.0125*math.pi, axis)
