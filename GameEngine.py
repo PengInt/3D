@@ -199,7 +199,7 @@ Vector3.__irshift__ = tempRot
 def eulrot(self, b:tuple[Vector3, Vector3]):
     self >>= (b[0], Quaternion(b[1].y, Vector3(0, 1, 0)))
     self >>= (b[0], Quaternion(b[1].z, Vector3(0, 0, 1)))
-    self >>= (b[0], Quaternion(b[1].x, Vector3(0, 0, 1)))
+    self >>= (b[0], Quaternion(b[1].x, Vector3(1, 0, 0)))
     return self
 Vector3.__ilshift__ = eulrot
 
@@ -375,12 +375,12 @@ class GameObject:
             v <<= (r, v3)
         self.pos <<= (r, v3)
         return self
-    def __ge__(self, b: Vector3):
+    def __ior__(self, b: Vector3):
         if isinstance(b, Vector3):
             self.pos += b
             for v in range(len(self.v)):
                 self.v[v] += b
-            return True
+            return self
         else:
             return NotImplemented
     @classmethod
@@ -429,7 +429,7 @@ class Renderer:
             self.vsync = 1
         self.surface = kwargs.pop('surface', None)
         if self.surface is None:
-            self.surface = pygame.display.set_mode(self.surfaceSize, vsync=self.vsync)
+            self.surface = pygame.display.set_mode(self.surfaceSize, pygame.RESIZABLE, vsync=self.vsync)
             pygame.display.set_icon(pygame.image.load('Icon.png'))
             pygame.display.set_caption('Renderer')
         self.name = kwargs.pop('Name', 0)
@@ -454,7 +454,7 @@ class Renderer:
         self.surface.fill((0, 0, 0))
         for obj in GameObject.heierarchy:
             obyekt = GameObject.copy(GameObject.heierarchy[obj], storeInHeierarchy=False)
-            obyekt >= camPos
+            obyekt |= camPos
             obyekt <<= (camPos, camRot)
             maxY = -1000000
             minY = 1000000
@@ -485,9 +485,9 @@ class Renderer:
                 c = (t.lighting(self.camera.pos) * 3/4 + 0.25) * 255
 
                 pygame.draw.polygon(self.surface, (c, c, c),
-                                    ((x1*self.surface.get_height()+self.surface.get_height()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),
-                                            (x2*self.surface.get_height()+self.surface.get_height()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5),
-                                            (x3*self.surface.get_height()+self.surface.get_height()*0.5, -y3*self.surface.get_height()+self.surface.get_height()*0.5)
+                                    ((x1*self.surface.get_height()+self.surface.get_width()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),
+                                            (x2*self.surface.get_height()+self.surface.get_width()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5),
+                                            (x3*self.surface.get_height()+self.surface.get_width()*0.5, -y3*self.surface.get_height()+self.surface.get_height()*0.5)
                                            ))
         pygame.display.update()
 

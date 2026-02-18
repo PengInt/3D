@@ -4,14 +4,14 @@ import GameEngine, math, random, pathlib
 
 
 
-GameEngine.GameObject.fromJSON(pathlib.Path.cwd()/'model_data.json')
+GameEngine.GameObject.fromJSON(pathlib.Path.cwd()/'panavia_tornado_ids_model_data.json', name='Suzanne')
 
 
 axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
 running = True
 
-GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.5 * math.pi, GameEngine.Vector3(1, 0, 0))
+#GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(0.5 * math.pi, GameEngine.Vector3(1, 0, 0))
 GameEngine.GameObject.heierarchy['Suzanne'] >>= GameEngine.Quaternion(1 * math.pi, GameEngine.Vector3(0, 1, 0))
 
 while running:
@@ -32,6 +32,15 @@ while running:
 				GameEngine.Renderer.renderers['Renderer'].camera.pos.y += 1
 			if e.key == GameEngine.system.K_q:
 				GameEngine.Renderer.renderers['Renderer'].camera.pos.y += -1
+			if e.key == GameEngine.system.K_UP:
+				GameEngine.Renderer.renderers['Renderer'].camera.rot.x += 1
+			if e.key == GameEngine.system.K_LEFT:
+				GameEngine.Renderer.renderers['Renderer'].camera.rot.y += -1
+			if e.key == GameEngine.system.K_DOWN:
+				GameEngine.Renderer.renderers['Renderer'].camera.rot.x += -1
+			if e.key == GameEngine.system.K_RIGHT:
+				GameEngine.Renderer.renderers['Renderer'].camera.rot.y += 1
+
 		#elif e.type == GameEngine.system.MOUSEBUTTONDOWN:
 		#	axis = GameEngine.Vector3(random.randint(-10, 10), random.randint(-10, 10), random.randint(-10, 10))
 
