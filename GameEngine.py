@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 import json
@@ -6,6 +8,10 @@ import pathlib
 import pygame as system
 from termcolor import colored as c
 import numpy as np
+import numba
+from numba import jit, njit, int32, float32
+from numba.experimental import jitclass
+from numba.extending import overload
 
 
 CLOCK = pygame.time.Clock()
@@ -20,7 +26,8 @@ def islistinstance(List, Class):
     return True
 
 
-class Vector3:
+@jitclass([('x', float32), ('y', float32), ('z', float32)])
+class Vector3(object):
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -30,67 +37,62 @@ class Vector3:
         return [self.x, self.y, self.z]
     def __neg__(self):
         return Vector3(-self.x, -self.y, -self.z)
-    def __pow__(self, b):
+    def __pow__(self, b: Vector3):
         if isinstance(b, Vector3):
             return self.x*b.x + self.y*b.y + self.z*b.z
         else:
-            return NotImplemented
-    '''def __mod__(self, b):    # cross product
-        if isinstance(b, Vector3):
-            return Vector3(self.x*b.x, self.y*b.y, self.z*b.z)
-        else:
-            return NotImplemented'''
-    def __add__(self, b):
+            raise NotImplementedError
+    def __add__(self, b: Vector3):
         if isinstance(b, Vector3):
             return Vector3(self.x+b.x, self.y+b.y, self.z+b.z)
         else:
-            return NotImplemented
-    def __radd__(self, a):
+            raise NotImplementedError
+    def __radd__(self, a: Vector3):
         return self.__add__(a)
-    def __mul__(self, b):
+    def __mul__(self, b: Vector3|int|float):
         if isinstance(b, int) or isinstance(b, float):
             return Vector3(self.x*b, self.y*b, self.z*b)
         elif isinstance(b, Vector3):
             return Vector3((self.y*b.z-self.z*b.y), (self.z*b.x-self.x*b.z), (self.x*b.y-self.y*b.x))
         else:
-            return NotImplemented
-    def __rmul__(self, a):
+            raise NotImplementedError
+    def __rmul__(self, a: Vector3|int|float):
         return self.__mul__(a)
-    def __sub__(self, b):
+    def __sub__(self, b: Vector3|int|float):
         return self.__add__(-b)
-    def __rsub__(self, a):
+    def __rsub__(self, a: Vector3|int|float):
         return -self.__sub__(a)
-    def __truediv__(self, b):
+    def __truediv__(self, b: Vector3|int|float):
         if isinstance(b, Vector3):
             return self.__mul__(Vector3(1/b.x, 1/b.y, 1/b.z))
         elif isinstance(b, float|int):
             return self.__mul__(1/b)
         else:
-            return NotImplemented
-    def __rtruediv__(self, a):
+            raise NotImplementedError
+    def __rtruediv__(self, a: Vector3|int|float):
         temp = self.__truediv__(a)
         return Vector3(1/temp.x, 1/temp.y, 1/temp.z)
-    def __eq__(self, b):
+    def __eq__(self, b: Vector3):
         if isinstance(b, Vector3):
             return self.x == b.x and self.y == b.y and self.z == b.z
         else:
-            return NotImplemented
+            raise NotImplementedError
     def __str__(self):
         return f'({self.x:.2f}, {self.y:.2f}, {self.z:.2f})'
     def __irshift__(self, b):
-        return NotImplemented
+        raise NotImplementedError
     def __ilshift__(self, b):
-        return NotImplemented
+        raise NotImplementedError
     def __abs__(self):
         return Vector3(math.fabs(self.x), math.fabs(self.y), math.fabs(self.z))
-    @classmethod
-    def dist(cls, a, b):
+    @staticmethod
+    def dist(a: Vector3, b: Vector3):
         dp = abs(Vector3(a.x - b.x, a.y - b.y, a.z - b.z))
         return (dp.x**2 + dp.y**2 + dp.z**2)**0.5
     def magnitude(self):
         return (self.x**2 + self.y**2 + self.z**2)**0.5
-    @classmethod
-    def getLowest(cls, points):
+    @staticmethod
+    def getLowest(points: list[Vector3]|tuple[Vector3]):
         lp = None
         for p in points:
             if lp == None:
@@ -100,8 +102,8 @@ class Vector3:
                     lp = p
         return lp
 
-    @classmethod
-    def getHighest(cls, points):
+    @staticmethod
+    def getHighest(points: list[Vector3]|tuple[Vector3]):
         hp = None
         for p in points:
             if hp == None:
@@ -112,7 +114,8 @@ class Vector3:
         return hp
 
 
-class Quaternion:
+@jitclass([('w', float32), ('a', float32), ('v', Vector3.class_type.instance_type)])
+class Quaternion(object):
     def __init__(self, a: float|int, v: Vector3):
         self.w = a
         self.a = a
@@ -128,14 +131,14 @@ class Quaternion:
         return self.v.z
 
 # (a1, **v1**) * (a2, **v2**) = (a1a2 - **v1**•**v2**, a1**v2** + a2**v1** + **v1**×**v2**)
-    def __mul__(self, b):
+    def __mul__(self, b: Quaternion):
         if isinstance(b, Quaternion):
             return Quaternion(
                 self.a*b.a - self.v ** b.v,
                 self.a * b.v + b.a * self.v + self.v * b.v
             )
         else:
-            return NotImplemented
+            raise NotImplementedError
     def __neg__(self):
         return Quaternion(-self.a, -self.v)
     @property
