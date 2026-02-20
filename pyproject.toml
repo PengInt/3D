@@ -5,6 +5,8 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 requires-python = ">=3.11"
 dependencies = [
+    "bpy>=5.0.1",
+    "numpy>=1.26.4",
     "pygame>=2.6.1",
     "termcolor>=3.3.0",
 ]

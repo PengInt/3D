@@ -8,6 +8,9 @@ from termcolor import colored as c
 import numpy as np
 
 
+CLOCK = pygame.time.Clock()
+
+
 def islistinstance(List, Class):
     if not isinstance(List, list):
         return False
@@ -327,7 +330,7 @@ class GameObject:
         return sortedTriangles
 
     @classmethod
-    def fromJSON(cls, file: pathlib.Path, name=0):
+    def fromJSON(cls, file: pathlib.Path, name: int|str =0):
         JSON = json.load(open(file))
         if name == 0:
             name = JSON['object_name']
@@ -442,6 +445,7 @@ class Renderer:
             Renderer.renderers[self.name] = self
         
         print(c('  -> New Renderer', (0, 255, 255)))
+        self.dt = -1
     def __str__(self):
         result = ''
         for attr in self.__dict__:
@@ -489,6 +493,7 @@ class Renderer:
                                             (x2*self.surface.get_height()+self.surface.get_width()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5),
                                             (x3*self.surface.get_height()+self.surface.get_width()*0.5, -y3*self.surface.get_height()+self.surface.get_height()*0.5)
                                            ))
+        self.dt = CLOCK.tick()/1000
         pygame.display.update()
 
 
