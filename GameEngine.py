@@ -230,8 +230,9 @@ class Line:
         return self
     
 class Triangle:
-    def __init__(self, v1, v2, v3):
+    def __init__(self, v1, v2, v3, c):
         self.v = [v1, v2, v3]
+        self.c = c
     @property
     def pos(self):
         return (self.v[0] + self.v[1] + self.v[2])/3
@@ -266,7 +267,10 @@ class Triangle:
             else:
                 up = False
         if up:
-            return self.verticalSurfaceArea / self.surfaceArea
+            try:
+                return self.verticalSurfaceArea / self.surfaceArea
+            except ZeroDivisionError:
+                return 0
         return 0
     def __irshift__(self, b: Quaternion|tuple[Quaternion, Vector3]):
         if isinstance(b, Quaternion):
@@ -284,7 +288,7 @@ class Triangle:
 
 class GameObject:
     heierarchy = {}
-    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]]|list[tuple[int, int]|tuple[list[int]]|list[list[int]]]|list[Line], t: tuple[tuple[int, int, int]]|list[tuple[int, int, int]]|tuple[list[int]]|list[list[int]]|list[Triangle], pos=Vector3(0, 0, 0), storeInHeierarchy=True, **kwargs):
+    def __init__(self, v: tuple[Vector3], l: tuple[tuple[int, int]]|list[tuple[int, int]|tuple[list[int]]|list[list[int]]]|list[Line], t: tuple[tuple[int, int, int]]|list[tuple[int, int, int]]|tuple[list[int]]|list[list[int]]|list[Triangle], c, pos=Vector3(0, 0, 0), storeInHeierarchy=True, **kwargs):
         self.pos = pos
         self.v = v
         self.l = []
@@ -298,7 +302,7 @@ class GameObject:
             self.t = t
         else:
             for i in t:
-                self.t.append(Triangle(self.v[i[0]], self.v[i[1]], self.v[i[2]]))
+                self.t.append(Triangle(self.v[i[0]], self.v[i[1]], self.v[i[2]], c))
         self.name = kwargs.pop('name', 0)
         if storeInHeierarchy:
             if self.name == 0:
@@ -327,7 +331,7 @@ class GameObject:
         return sortedTriangles
 
     @classmethod
-    def fromJSON(cls, file: pathlib.Path, name=0):
+    def fromJSON(cls, file: pathlib.Path, colour=(255, 255, 255), name=0):
         JSON = json.load(open(file))
         if name == 0:
             name = JSON['object_name']
@@ -344,7 +348,7 @@ class GameObject:
             elif len(f['vertices_indices']) == 4:
                 triangles.append(f['vertices_indices'][:3])
                 triangles.append(f['vertices_indices'][1:])
-        return GameObject(vertices, lines, triangles, Vector3(0, 0, 0), name=name)
+        return GameObject(vertices, lines, triangles, colour, Vector3(0, 0, 0), name=name)
 
 
     def __irshift__(self, b: Quaternion|tuple[Quaternion, Vector3]):
@@ -385,7 +389,7 @@ class GameObject:
             return NotImplemented
     @classmethod
     def copy(cls, a, storeInHeierarchy=True):
-        return GameObject(a.v.copy(), a.l.copy(), a.t.copy(), pos=Vector3(a.pos.x, a.pos.y, a.pos.z), storeInHeierarchy=storeInHeierarchy)
+        return GameObject(a.v.copy(), a.l.copy(), a.t.copy(), (255, 255, 255), pos=Vector3(a.pos.x, a.pos.y, a.pos.z), storeInHeierarchy=storeInHeierarchy)
 
 class Camera:
     def __init__(self, **kwargs):
@@ -454,14 +458,21 @@ class Renderer:
         self.surface.fill((0, 0, 0))
         for obj in GameObject.heierarchy:
             obyekt = GameObject.copy(GameObject.heierarchy[obj], storeInHeierarchy=False)
-            obyekt |= camPos
-            obyekt <<= (camPos, camRot)
+            obyekt |= -camPos
+            obyekt <<= (Vector3(0, 0, 0), -camRot)
             maxY = -1000000
             minY = 1000000
             for t in obyekt.t:
                 if t.pos.y > maxY: maxY = t.pos.y
                 elif t.pos.y < minY: minY = t.pos.y
             for t in obyekt.getSortedTriangles(self.camera.pos):
+                dz1 = t.v[0].z-camPos.z
+                dz2 = t.v[1].z-camPos.z
+                dz3 = t.v[2].z-camPos.z
+
+                if dz1 < 0.01 or dz2 < 0.01 or dz3 < 0.01:
+                    continue
+
                 dx1 = t.v[0].x-camPos.x
                 dx2 = t.v[1].x-camPos.x
                 dx3 = t.v[2].x-camPos.x
@@ -469,10 +480,6 @@ class Renderer:
                 dy1 = t.v[0].y-camPos.y
                 dy2 = t.v[1].y-camPos.y
                 dy3 = t.v[2].y-camPos.y
-
-                dz1 = t.v[0].z-camPos.z
-                dz2 = t.v[1].z-camPos.z
-                dz3 = t.v[2].z-camPos.z
 
                 y1 = dy1/dz1
                 y2 = dy2/dz2
@@ -482,18 +489,26 @@ class Renderer:
                 x2 = dx2 / dz2
                 x3 = dx3 / dz3
 
-                c = (t.lighting(self.camera.pos) * 3/4 + 0.25) * 255
+                r = (t.lighting(self.camera.pos) * 3/4 + 0.25) * t.c[0]
+                g = (t.lighting(self.camera.pos) * 3 / 4 + 0.25) * t.c[1]
+                b = (t.lighting(self.camera.pos) * 3 / 4 + 0.25) * t.c[2]
+                c = (r, g, b)
 
-                pygame.draw.polygon(self.surface, (c, c, c),
+                pygame.draw.polygon(self.surface, c,
                                     ((x1*self.surface.get_height()+self.surface.get_width()*0.5, -y1*self.surface.get_height()+self.surface.get_height()*0.5),
                                             (x2*self.surface.get_height()+self.surface.get_width()*0.5, -y2*self.surface.get_height()+self.surface.get_height()*0.5),
                                             (x3*self.surface.get_height()+self.surface.get_width()*0.5, -y3*self.surface.get_height()+self.surface.get_height()*0.5)
                                            ))
         pygame.display.update()
 
+Clock = pygame.time.Clock()
 
-print(c('Welcom from GameEngine!\n', (153, 255, 102)))
 
 
 Renderer()
 print(Renderer.renderers['Renderer'])
+
+print(c('Welcom from GameEngine!\n', (153, 255, 102)))
+
+def dt():
+    return Clock.tick(180) / 1000

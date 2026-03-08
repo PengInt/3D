@@ -56,7 +56,7 @@ def export_mesh_to_json(filepath):
     print(f"Exported successfully to {filepath}")
 
 # Change this path to where you want to save the file
-output_path = os.path.join(os.getcwd(), 'C:\\Users\\gommet')
+output_path = os.path.join(os.getcwd(), 'C:\\Users\\name')
 json_filename = "model_data.json"
 output_filepath = os.path.join(output_path, json_filename)
 export_mesh_to_json(output_filepath)
