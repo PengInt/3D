@@ -12,7 +12,7 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["python3", "main.py"]
+run = ["sh", "-c", "Xvfb :0 -screen 0 1024x768x24 & DISPLAY=:0 python3 main.py & websockify --web /nix/store/*-novnc-*/share/novnc 8080 localhost:5900"]
 deploymentTarget = "cloudrun"
 
 [agent]
